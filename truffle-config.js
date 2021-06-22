@@ -65,7 +65,7 @@ module.exports = {
       gas: 7000000,
       gasPrice: '0'
     },
-    mumbaiRoot: {
+    mumbai: {
       provider: () =>
         new HDWalletProvider(
           MNEMONIC,
@@ -76,15 +76,15 @@ module.exports = {
       gasPrice: 10000000000, // 10 gwei
       skipDryRun: true
     },
-    mumbaiChild: {
+    toronto: {
       provider: () =>
         new HDWalletProvider(
           MNEMONIC,
-          'https://rpc-mumbai.matic.today'
+          process.env.TORONTO_URL
         ),
-      network_id: 80001,
+      network_id: 100,
       gas: 7000000,
-      gasPrice: 10000000000, // 10 gwei
+      gasPrice: 0, // 10 gwei
       skipDryRun: true
     },
     mainnetRoot: {
