@@ -1,15 +1,15 @@
 pragma solidity 0.6.6;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IChildERC20} from "./IChildERC20.sol";
 import {AccessControlMixin} from "../../common/AccessControlMixin.sol";
-import {IChildToken} from "./IChildToken.sol";
 import {NativeMetaTransaction} from "../../common/NativeMetaTransaction.sol";
 import {ContextMixin} from "../../common/ContextMixin.sol";
 
 
 contract ChildERC20 is
     ERC20,
-    IChildToken,
+    IChildERC20,
     AccessControlMixin,
     NativeMetaTransaction,
     ContextMixin
@@ -20,12 +20,12 @@ contract ChildERC20 is
         string memory name_,
         string memory symbol_,
         uint8 decimals_,
-        address childChainManager
+        address bridgeHandler
     ) public ERC20(name_, symbol_) {
         _setupContractId("ChildERC20");
         _setupDecimals(decimals_);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(DEPOSITOR_ROLE, childChainManager);
+        _setupRole(DEPOSITOR_ROLE, bridgeHandler);
         _initializeEIP712(name_);
     }
 
@@ -40,29 +40,28 @@ contract ChildERC20 is
         return ContextMixin.msgSender();
     }
 
-    /**
-     * @notice called when token is deposited on root chain
-     * @dev Should be callable only by ChildChainManager
-     * Should handle deposit by minting the required amount for user
-     * Make sure minting is done only by this function
-     * @param user user address for whom deposit is being done
-     * @param depositData abi encoded amount
-     */
-    function deposit(address user, bytes calldata depositData)
+
+    /// @notice Mints the user an amount of this token
+    /// @dev Only callable by the bridge handler contract. Intended to be used on a deposit to this chain.
+    /// @param user The user to credit
+    /// @param amount The amount to mint
+    function mint(address user, uint256 amount)
         external
         override
         only(DEPOSITOR_ROLE)
     {
-        uint256 amount = abi.decode(depositData, (uint256));
         _mint(user, amount);
     }
 
-    /**
-     * @notice called when user wants to withdraw tokens back to root chain
-     * @dev Should burn user's tokens. This transaction will be verified when exiting on root chain
-     * @param amount amount of tokens to withdraw
-     */
-    function withdraw(uint256 amount) external {
-        _burn(_msgSender(), amount);
+    /// @notice Burns the user's tokens
+    /// @dev Only callable by the bridge handler contract. Intended to be use on a withdraw from this chain.
+    /// @param user The user whose tokens to burn
+    /// @param amount The amount to mint
+    function burnFrom(address user, uint256 amount)
+        external
+        override
+        only(DEPOSITOR_ROLE)
+    {
+        _burn(user, amount);
     }
 }
